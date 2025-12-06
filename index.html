@@ -1,0 +1,1483 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kommunales Dashboard – 3 Kommunen (verbesserte Charts)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --wk-blue: #003b70;
+      --wk-blue-soft: #5479a4;
+      --wk-blue-light: #e5edf5;
+      --wk-orange: #f28c34;
+      --wk-orange-soft: #f6b274;
+      --wk-bg: #f7f5f2;
+      --wk-card-bg: #ffffff;
+      --wk-border: #e0e0e0;
+      --wk-text: #222222;
+      --wk-text-muted: #666666;
+      --radius-card: 14px;
+      --shadow-card: 0 8px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+      background: var(--wk-bg);
+      color: var(--wk-text);
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .dashboard-wrapper {
+      width: 100%;
+      max-width: 1440px;
+      aspect-ratio: 16 / 9;
+      background: var(--wk-bg);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dashboard-header {
+      background: var(--wk-blue);
+      color: #ffffff;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-left h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+    }
+
+    .header-left span { font-size: 0.85rem; opacity: 0.9; }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .select-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 0.72rem;
+      opacity: 0.9;
+    }
+
+    .select-label {
+      font-size: 0.75rem;
+      opacity: 0.9;
+    }
+
+    select {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 28px;
+      position: relative;
+      background-image: linear-gradient(45deg, transparent 50%, #ffffff 50%),
+        linear-gradient(135deg, #ffffff 50%, transparent 50%);
+      background-position: calc(100% - 15px) calc(50% - 3px),
+        calc(100% - 10px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+    }
+
+    .cta {
+      background: var(--wk-orange);
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cta span { font-size: 0.9rem; }
+
+    .tab-row {
+      background: #ffffff;
+      padding: 8px 24px 4px 24px;
+      border-bottom: 1px solid var(--wk-border);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: var(--wk-text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      border: 1px solid transparent;
+      transition: background 0.15s ease, color 0.15s ease, border 0.15s ease;
+    }
+
+    .tab--active {
+      background: var(--wk-blue-light);
+      color: var(--wk-blue);
+      font-weight: 600;
+      border-color: var(--wk-blue-light);
+    }
+
+    .dashboard-main {
+      flex: 1;
+      padding: 18px 22px 22px 22px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content--active {
+      display: grid;
+      grid-template-columns: 1.4fr 1.1fr 1.1fr;
+      grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--wk-card-bg);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--wk-blue);
+    }
+
+    .card-subtitle {
+      font-size: 0.75rem;
+      color: var(--wk-text-muted);
+    }
+
+    .metric-large { font-size: 1.6rem; font-weight: 600; margin-bottom: 4px; }
+    .metric-label { font-size: 0.8rem; color: var(--wk-text-muted); }
+
+    .metric-change {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #1a7f3b;
+    }
+    .metric-change.neg { color: #c0392b; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      background: var(--wk-blue-light);
+      color: var(--wk-blue);
+      font-size: 0.75rem;
+      padding: 3px 9px;
+      white-space: nowrap;
+    }
+
+    /* Chart-Styles neu / verbessert */
+    .chart-shell {
+      margin-top: 10px;
+      padding: 10px 10px 8px 10px;
+      border-radius: 10px;
+      background: linear-gradient(
+        135deg,
+        rgba(0, 59, 112, 0.03),
+        rgba(0, 59, 112, 0.08)
+      );
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      color: var(--wk-text-muted);
+    }
+
+    .chart-legend {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.72rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--wk-blue-soft);
+    }
+
+    .legend-dot.alt {
+      background: var(--wk-orange);
+    }
+
+    .chart-bars-vertical {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      height: 70px;
+    }
+
+    .chart-bar-v {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.72rem;
+      color: var(--wk-text-muted);
+    }
+
+    .chart-bar-v-inner {
+      width: 80%;
+      border-radius: 6px 6px 2px 2px;
+      background: var(--wk-blue-soft);
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2px;
+      color: #fff;
+      font-size: 0.7rem;
+    }
+
+    .chart-bar-v-inner.alt {
+      background: var(--wk-orange);
+    }
+
+    .chart-bar-h {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #e6e6e6;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .chart-bar-h-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--wk-blue-soft);
+      position: relative;
+    }
+
+    .chart-bar-h-fill.alt {
+      background: var(--wk-orange);
+    }
+
+    .chart-bar-h-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.74rem;
+      color: var(--wk-text-muted);
+      margin-top: 2px;
+    }
+
+    .chart-bar-h-label-row strong {
+      color: var(--wk-text);
+      font-size: 0.78rem;
+    }
+
+    .chart-note {
+      font-size: 0.7rem;
+      color: var(--wk-text-muted);
+      margin-top: 4px;
+    }
+
+    .key-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .key-metric {
+      font-size: 0.8rem;
+      color: var(--wk-text-muted);
+    }
+
+    .key-metric strong {
+      display: block;
+      font-size: 0.98rem;
+      color: var(--wk-text);
+    }
+
+    .hint-box {
+      background: #fff4e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.78rem;
+      color: #8f5a1b;
+      margin-top: 8px;
+    }
+
+    .compare-note {
+      font-size: 0.78rem;
+      color: var(--wk-text-muted);
+      margin-top: 4px;
+    }
+
+    @media (max-width: 1100px) {
+      .dashboard-wrapper {
+        aspect-ratio: auto;
+        height: auto;
+      }
+      .tab-content--active {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-wrapper">
+    <header class="dashboard-header">
+      <div class="header-left">
+        <h1 id="header-kommunen-name">Kommunale Übersicht – Musterstadt</h1>
+        <span id="header-subtitle">Aktualisiert: April 2026 · Datenbasis: Wegweiser Kommune</span>
+      </div>
+      <div class="header-right">
+        <div class="select-wrapper">
+          <span class="select-label">Ausgewählte Kommune</span>
+          <select id="select-main">
+            <option value="musterstadt">Musterstadt</option>
+            <option value="landgemeinde">Landgemeinde Nordtal</option>
+            <option value="kleinstadt">Kleinstadt Sonnenburg</option>
+          </select>
+        </div>
+        <div class="select-wrapper">
+          <span class="select-label">Vergleichskommune</span>
+          <select id="select-compare">
+            <option value="cluster">Cluster-Durchschnitt</option>
+            <option value="musterstadt">Musterstadt</option>
+            <option value="landgemeinde">Landgemeinde Nordtal</option>
+            <option value="kleinstadt">Kleinstadt Sonnenburg</option>
+          </select>
+        </div>
+        <button class="cta">
+          <span>Mini-Report herunterladen</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="tab-row">
+      <div class="tab tab--active" data-tab="gesamt">Gesamtüberblick</div>
+      <div class="tab" data-tab="demografie">Demografie</div>
+      <div class="tab" data-tab="haushalt">Haushalt</div>
+      <div class="tab" data-tab="soziales">Soziales</div>
+      <div class="tab" data-tab="arbeitsmarkt">Arbeitsmarkt</div>
+      <div class="tab" data-tab="pflege">Pflege & Gesundheit</div>
+    </div>
+
+    <main class="dashboard-main">
+      <!-- Gesamtüberblick -->
+      <section class="tab-content tab-content--active" data-tab-content="gesamt">
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Einwohner & Trend</div>
+              <div class="card-subtitle">Bevölkerungsentwicklung</div>
+            </div>
+            <span class="pill" id="cluster-pill">Cluster: ländlich, schrumpfend</span>
+          </div>
+          <div class="metric-large" id="g-einwohner">8.650</div>
+          <div class="metric-label">
+            5-Jahres-Veränderung:
+            <span class="metric-change" id="g-einwohner-change">−1,3&nbsp;%</span>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Einwohnerentwicklung (Index)</span>
+              <span class="chart-legend">
+                <span class="legend-item"><span class="legend-dot"></span> Kommune</span>
+                <span class="legend-item"><span class="legend-dot alt"></span> Vergleich</span>
+              </span>
+            </div>
+            <div class="chart-bars-vertical">
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner" id="g-einwohner-bar-2015" style="height:55%;">
+                  <span>2015</span>
+                </div>
+              </div>
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner alt" id="g-einwohner-bar-2020" style="height:65%;">
+                  <span>2020</span>
+                </div>
+              </div>
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner" id="g-einwohner-bar-2025" style="height:60%;">
+                  <span>2025</span>
+                </div>
+              </div>
+            </div>
+            <div class="chart-note" id="g-einwohner-chart-note">
+              Werte stilisiert als Index (2015 = 100) · tatsächliche Werte aus Wegweiser Kommune einbindbar.
+            </div>
+          </div>
+          <div class="hint-box" id="g-einwohner-hint">
+            Hinweis: Rückgang konzentriert sich auf Kernort und zwei Ortsteile.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Haushaltslage</div>
+              <div class="card-subtitle">Steuerkraft & Verschuldung</div>
+            </div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="g-steuerkraft">450 €</strong>
+              Steuerkraft je EW
+            </div>
+            <div class="key-metric">
+              <strong id="g-verschuldung">650 €</strong>
+              Verschuldung je EW
+            </div>
+            <div class="key-metric">
+              <strong id="g-saldo">−280 T€</strong>
+              Saldo 2025
+            </div>
+            <div class="key-metric">
+              <strong id="g-invest">24&nbsp;%</strong>
+              Investitionsquote
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Einnahmen vs. Ausgaben (Index)</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="g-index-einnahmen" style="width:72%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Einnahmen</span>
+                <strong id="g-index-einnahmen-label">Index 72</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="g-index-ausgaben" style="width:88%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Ausgaben</span>
+                <strong id="g-index-ausgaben-label">Index 88</strong>
+              </div>
+            </div>
+          </div>
+          <div class="compare-note" id="g-haushalt-compare-note">
+            Vergleich mit: Cluster-Durchschnitt – leicht unterdurchschnittliche Steuerkraft, höhere Verschuldung.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Arbeitsmarkt</div>
+              <div class="card-subtitle">Beschäftigung & offene Stellen</div>
+            </div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="g-alo">4,2&nbsp;%</strong>
+              Arbeitslosenquote
+            </div>
+            <div class="key-metric">
+              <strong id="g-offene-stellen">115</strong>
+              offene Stellen
+            </div>
+            <div class="key-metric">
+              <strong id="g-offene-pflege">45</strong>
+              davon Pflege
+            </div>
+            <div class="key-metric">
+              <strong id="g-beschaeftigung">+3,1&nbsp;%</strong>
+              Beschäftigungswachstum 5 Jahre
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Offene Stellen nach Bereich</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="g-stellen-allg" style="width:70%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Gesamt</span>
+                <strong id="g-stellen-allg-label">115 Stellen</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="g-stellen-pflege" style="width:55%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>davon Pflege</span>
+                <strong id="g-stellen-pflege-label">45 Stellen</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Soziale Lage</div>
+              <div class="card-subtitle">Armutsgefährdung & Kinderarmut</div>
+            </div>
+          </div>
+          <div class="metric-large" id="g-armut">21,5&nbsp;%</div>
+          <div class="metric-label">
+            Armutsgefährdungsquote ·
+            <span class="metric-change" id="g-armut-change">+1,8&nbsp;Pp</span>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="g-kinderarmut">17,6&nbsp;%</strong>
+              Kinder in Grundsicherung
+            </div>
+            <div class="key-metric">
+              <strong id="g-sozialraeume">3</strong>
+              belastete Sozialräume
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Belastungsindex nach Sozialräumen</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="g-sozialindex-1" style="width:80%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>höchstbelasteter Sozialraum</span>
+                <strong id="g-sozialindex-1-label">Index 80</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="g-sozialindex-2" style="width:45%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Cluster-Mittel</span>
+                <strong id="g-sozialindex-2-label">Index 45</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Pflegebedarf</div>
+              <div class="card-subtitle">heute & 2030</div>
+            </div>
+          </div>
+          <div class="metric-large" id="g-pflege-heute">275</div>
+          <div class="metric-label">
+            Prognose 2030:
+            <span class="metric-change" id="g-pflege-prognose">+31&nbsp;%</span>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Pflegeplätze vs. Bedarf (Index)</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="g-pflege-plaetze" style="width:68%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>vorhandene Plätze</span>
+                <strong id="g-pflege-plaetze-label">Index 68</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="g-pflege-bedarf" style="width:92%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>erwarteter Bedarf 2030</span>
+                <strong id="g-pflege-bedarf-label">Index 92</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Ampel Gesamtbewertung</div>
+              <div class="card-subtitle">Handlungsdruck der Kommune</div>
+            </div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="g-ampel-demografie">Rot</strong>
+              Demografie
+            </div>
+            <div class="key-metric">
+              <strong id="g-ampel-haushalt">Gelb</strong>
+              Haushalt
+            </div>
+            <div class="key-metric">
+              <strong id="g-ampel-soziales">Gelb</strong>
+              Soziales
+            </div>
+            <div class="key-metric">
+              <strong id="g-ampel-pflege">Rot</strong>
+              Pflege & Fachkräfte
+            </div>
+          </div>
+          <div class="hint-box" id="g-ampel-hint">
+            Empfehlung: Schwerpunktsetzung auf Pflegeinfrastruktur, Prävention in belasteten Sozialräumen und Fachkräftegewinnung.
+          </div>
+        </section>
+      </section>
+
+      <!-- Demografie-Tab -->
+      <section class="tab-content" data-tab-content="demografie">
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Bevölkerungsentwicklung</div>
+              <div class="card-subtitle">Ist-Stand & Prognose</div>
+            </div>
+          </div>
+          <div class="metric-large" id="d-einwohner">8.650</div>
+          <div class="metric-label">
+            Veränderung seit 2015:
+            <span class="metric-change" id="d-einwohner-change">−3,9&nbsp;%</span>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Einwohner (Index, 2015 = 100)</span>
+            </div>
+            <div class="chart-bars-vertical">
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner" id="d-einw-2015" style="height:60%;">
+                  <span>100</span>
+                </div>
+                <span>2015</span>
+              </div>
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner alt" id="d-einw-2025" style="height:55%;">
+                  <span id="d-einw-2025-label">96</span>
+                </div>
+                <span>2025</span>
+              </div>
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner" id="d-einw-2035" style="height:52%;">
+                  <span id="d-einw-2035-label">92</span>
+                </div>
+                <span>2035*</span>
+              </div>
+            </div>
+            <div class="chart-note">
+              *Prognose auf Basis der Entwicklung · reale Werte optional aus Wegweiser Kommune.
+            </div>
+          </div>
+          <div class="hint-box" id="d-einwohner-hint">
+            In den Jahren 2030–2035 wird ein verstärkter Rückgang erwartet – Schwerpunkt: junge Erwachsene.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Altersstruktur</div>
+              <div class="card-subtitle">Jung vs. Alt</div>
+            </div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="d-anteil-u18">18&nbsp;%</strong>
+              unter 18 Jahren
+            </div>
+            <div class="key-metric">
+              <strong id="d-anteil-65plus">38&nbsp;%</strong>
+              65+ Jahre
+            </div>
+            <div class="key-metric">
+              <strong id="d-altersquotient">2,1</strong>
+              Altersquotient (67+ je U18)
+            </div>
+            <div class="key-metric">
+              <strong id="d-zuwachs-65plus">+6 Pp</strong>
+              Zuwachs 65+ in 10 Jahren
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Anteil nach Altersgruppen</span>
+              <span class="chart-legend">
+                <span class="legend-item"><span class="legend-dot alt"></span> U18</span>
+                <span class="legend-item"><span class="legend-dot"></span> 65+</span>
+              </span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="d-bar-u18" style="width:18%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>unter 18 Jahren</span>
+                <strong id="d-bar-u18-label">18&nbsp;%</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="d-bar-65plus" style="width:44%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>65+ Jahre</span>
+                <strong id="d-bar-65plus-label">38&nbsp;%</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Wohnraumbedarf</div>
+              <div class="card-subtitle">Haushaltsgrößen & Neubau</div>
+            </div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="d-haushaltsgroesse">2,0</strong>
+              Ø Haushaltsgröße
+            </div>
+            <div class="key-metric">
+              <strong id="d-barrierefrei">+120</strong>
+              benötigte barrierearme Wohnungen bis 2035
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Barrierearme Wohnungen (Ziel 2035)</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="d-wohn-bestand" style="width:40%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>heutiger Bestand (geschätzt)</span>
+                <strong id="d-wohn-bestand-label">ca. 80</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="d-wohn-ziel" style="width:70%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Ziel inkl. Umbau/Neubau</span>
+                <strong id="d-wohn-ziel-label">+120 zusätzlich</strong>
+              </div>
+            </div>
+          </div>
+          <div class="hint-box" id="d-wohn-hint">
+            Fokus auf altengerechten Umbau im Bestand statt allein auf Neubauflächen.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Binnenwanderung</div>
+              <div class="card-subtitle">Zu- und Wegzüge</div>
+            </div>
+          </div>
+          <div class="metric-large" id="d-wanderung">−35</div>
+          <div class="metric-label">Saldo 2025 (Personen)</div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Zu- und Wegzüge (vereinfacht)</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="d-wanderung-zu" style="width:45%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Zuzüge</span>
+                <strong id="d-wanderung-zu-label">z. B. 180</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="d-wanderung-weg" style="width:55%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Wegzüge</span>
+                <strong id="d-wanderung-weg-label">z. B. 200</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Vergleich ähnliche Kommunen</div>
+              <div class="card-subtitle">Cluster-Auswertung</div>
+            </div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="d-kommunen-trend">−1,3&nbsp;%</strong>
+              gewählte Kommune
+            </div>
+            <div class="key-metric">
+              <strong id="d-cluster-trend">−0,5&nbsp;%</strong>
+              Vergleich
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Trendvergleich (5 Jahre)</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="d-bar-kommunen-trend" style="width:60%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>gewählte Kommune</span>
+                <strong id="d-bar-kommunen-trend-label">−1,3&nbsp;%</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="d-bar-cluster-trend" style="width:40%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Vergleich</span>
+                <strong id="d-bar-cluster-trend-label">−0,5&nbsp;%</strong>
+              </div>
+            </div>
+          </div>
+          <div class="hint-box" id="d-vergleich-hint">
+            Die gewählte Kommune schrumpft schneller als der Vergleichswert – vertiefende Analyse empfohlen.
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Handlungsempfehlung</div>
+              <div class="card-subtitle">Demografie</div>
+            </div>
+          </div>
+          <div class="hint-box" id="d-empfehlung">
+            <strong>Strategische Optionen:</strong><br />
+            – Anpassung Schul- und Kita-Standorte<br />
+            – Stärkung Zuzug junger Familien (Wohnbau, Mobilität)<br />
+            – vorausschauende Pflege- und Sozialplanung.
+          </div>
+        </section>
+      </section>
+
+      <!-- übrige Tabs gekürzt, behalten Basischarts bei -->
+      <section class="tab-content" data-tab-content="haushalt">
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">Einnahmenstruktur</div>
+            <div class="card-subtitle">Steuern & Zuweisungen</div>
+          </div>
+          <div class="metric-large" id="h-einnahmen">21,4 Mio. €</div>
+          <div class="metric-label">Ordentliche Erträge 2025 (Schätzung)</div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Steuerarten (vereinfachter Anteil)</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="h-gewerbe" style="width:40%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Gewerbesteuer</span>
+                <strong id="h-gewerbe-label">ca. 40&nbsp;%</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="h-einkommen" style="width:35%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Einkommensteueranteil</span>
+                <strong id="h-einkommen-label">ca. 35&nbsp;%</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">Ausgabenstruktur</div>
+            <div class="card-subtitle">Pflichtaufgaben vs. freiwillige Leistungen</div>
+          </div>
+          <div class="key-metrics">
+            <div class="key-metric">
+              <strong id="h-pflicht">78&nbsp;%</strong> Pflichtaufgaben
+            </div>
+            <div class="key-metric">
+              <strong id="h-freiwillig">22&nbsp;%</strong> freiwillige Leistungen
+            </div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Anteil Pflicht- vs. freiwillige Aufgaben</span>
+            </div>
+            <div class="chart-bar-h">
+              <div class="chart-bar-h-fill" id="h-pflicht-bar" style="width:78%;"></div>
+            </div>
+            <div class="chart-bar-h-label-row">
+              <span>Pflichtaufgaben</span>
+              <strong>78&nbsp;%</strong>
+            </div>
+            <div class="chart-bar-h">
+              <div class="chart-bar-h-fill alt" id="h-freiwillig-bar" style="width:22%;"></div>
+            </div>
+            <div class="chart-bar-h-label-row">
+              <span>freiwillige Leistungen</span>
+              <strong>22&nbsp;%</strong>
+            </div>
+          </div>
+          <div class="hint-box" id="h-hint">
+            Freiwillige Leistungen konzentrieren sich auf Kultur & Sport – Einschnitte hätten direkte Bürgerwirkung.
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-content" data-tab-content="soziales">
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">Armutsgefährdung</div>
+            <div class="card-subtitle">Bevölkerung insgesamt</div>
+          </div>
+          <div class="metric-large" id="s-armut">21,5&nbsp;%</div>
+          <div class="metric-label">
+            <span class="metric-change" id="s-armut-change">+1,8&nbsp;Pp</span> in 5 Jahren
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Armutsgefährdung im Zeitverlauf (Index)</span>
+            </div>
+            <div class="chart-bars-vertical">
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner" id="s-armut-2015" style="height:55%;">
+                  <span>100</span>
+                </div>
+                <span>2015</span>
+              </div>
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner alt" id="s-armut-2025" style="height:65%;">
+                  <span id="s-armut-2025-label">~108</span>
+                </div>
+                <span>2025</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">Kinderarmut</div>
+            <div class="card-subtitle">unter 15 Jahren</div>
+          </div>
+          <div class="metric-large" id="s-kinderarmut">17,6&nbsp;%</div>
+          <div class="metric-label" id="s-kinderarmut-label">Kinder in Grundsicherung</div>
+          <div class="hint-box" id="s-hint">
+            Schwerpunkträume: Sozialraum Nord, Siedlung Süd, Ortsteil West.
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-content" data-tab-content="arbeitsmarkt">
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">Beschäftigung</div>
+            <div class="card-subtitle">Quote & Entwicklung</div>
+          </div>
+          <div class="metric-large" id="a-beschaeftigte">320</div>
+          <div class="metric-label">Beschäftigte je 1.000 Einwohner</div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Beschäftigtenentwicklung (vereinfacht)</span>
+            </div>
+            <div class="chart-bars-vertical">
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner" id="a-beschaeftigte-2015" style="height:55%;">
+                  <span>100</span>
+                </div>
+                <span>2015</span>
+              </div>
+              <div class="chart-bar-v">
+                <div class="chart-bar-v-inner alt" id="a-beschaeftigte-2025" style="height:65%;">
+                  <span id="a-beschaeftigte-2025-label">~103</span>
+                </div>
+                <span>2025</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-content" data-tab-content="pflege">
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title">Pflegebedürftige</div>
+            <div class="card-subtitle">heute & Prognose</div>
+          </div>
+          <div class="metric-large" id="p-pflege-heute">275</div>
+          <div class="metric-label">
+            Prognose 2030:
+            <span class="metric-change" id="p-pflege-prognose">+31&nbsp;%</span>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-header">
+              <span>Pflegeplätze vs. Bedarf</span>
+            </div>
+            <div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill" id="p-plaetze" style="width:68%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>vorhandene Plätze</span>
+                <strong id="p-plaetze-label">Index 68</strong>
+              </div>
+              <div class="chart-bar-h">
+                <div class="chart-bar-h-fill alt" id="p-bedarf" style="width:92%;"></div>
+              </div>
+              <div class="chart-bar-h-label-row">
+                <span>Bedarf 2030</span>
+                <strong id="p-bedarf-label">Index 92</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const kommunen = {
+      musterstadt: {
+        name: "Musterstadt",
+        cluster: "ländlich, schrumpfend",
+        einwohner: 8650,
+        einwohnerChange5: -1.3,
+        einwohnerChange10: -3.9,
+        armutQuote: 21.5,
+        armutChange5: 1.8,
+        kinderarmut: 17.6,
+        sozialraeumeBelastet: 3,
+        steuerkraft: 450,
+        verschuldung: 650,
+        saldo: -280,
+        investquote: 24,
+        indexEinnahmen: 72,
+        indexAusgaben: 88,
+        aloQuote: 4.2,
+        offeneStellen: 115,
+        offeneStellenPflege: 45,
+        beschaeftigungswachstum5: 3.1,
+        pflegeHeute: 275,
+        pflegePrognose: 31,
+        pflegePlaetzeIndex: 68,
+        pflegeBedarfIndex: 92,
+        anteilU18: 18,
+        anteil65plus: 38,
+        altersquotient: 2.1,
+        zuwachs65plus10: 6,
+        haushaltsgroesse: 2.0,
+        barrierefrei2035: 120,
+        binnenwanderungSaldo: -35,
+        ampel: { demografie: "Rot", haushalt: "Gelb", soziales: "Gelb", pflege: "Rot" }
+      },
+      landgemeinde: {
+        name: "Landgemeinde Nordtal",
+        cluster: "sehr ländlich, alternd",
+        einwohner: 4200,
+        einwohnerChange5: -4.5,
+        einwohnerChange10: -7.8,
+        armutQuote: 18.2,
+        armutChange5: 0.9,
+        kinderarmut: 14.1,
+        sozialraeumeBelastet: 2,
+        steuerkraft: 360,
+        verschuldung: 480,
+        saldo: -90,
+        investquote: 18,
+        indexEinnahmen: 65,
+        indexAusgaben: 80,
+        aloQuote: 3.5,
+        offeneStellen: 48,
+        offeneStellenPflege: 18,
+        beschaeftigungswachstum5: 1.2,
+        pflegeHeute: 165,
+        pflegePrognose: 38,
+        pflegePlaetzeIndex: 74,
+        pflegeBedarfIndex: 96,
+        anteilU18: 15,
+        anteil65plus: 41,
+        altersquotient: 2.4,
+        zuwachs65plus10: 7,
+        haushaltsgroesse: 2.1,
+        barrierefrei2035: 80,
+        binnenwanderungSaldo: -20,
+        ampel: { demografie: "Rot", haushalt: "Gelb", soziales: "Gelb", pflege: "Rot" }
+      },
+      kleinstadt: {
+        name: "Kleinstadt Sonnenburg",
+        cluster: "kleinstädtisch, wachsend",
+        einwohner: 15200,
+        einwohnerChange5: 2.8,
+        einwohnerChange10: 5.1,
+        armutQuote: 16.4,
+        armutChange5: 0.4,
+        kinderarmut: 13.2,
+        sozialraeumeBelastet: 2,
+        steuerkraft: 520,
+        verschuldung: 710,
+        saldo: 60,
+        investquote: 27,
+        indexEinnahmen: 85,
+        indexAusgaben: 82,
+        aloQuote: 3.1,
+        offeneStellen: 230,
+        offeneStellenPflege: 70,
+        beschaeftigungswachstum5: 4.6,
+        pflegeHeute: 390,
+        pflegePrognose: 24,
+        pflegePlaetzeIndex: 82,
+        pflegeBedarfIndex: 88,
+        anteilU18: 20,
+        anteil65plus: 29,
+        altersquotient: 1.4,
+        zuwachs65plus10: 3,
+        haushaltsgroesse: 2.2,
+        barrierefrei2035: 140,
+        binnenwanderungSaldo: 45,
+        ampel: { demografie: "Gelb", haushalt: "Grün", soziales: "Gelb", pflege: "Gelb" }
+      }
+    };
+
+    const clusterDurchschnitt = {
+      name: "Cluster-Durchschnitt",
+      einwohnerChange5: -0.5,
+      armutQuote: 19.3
+    };
+
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+    const selectMain = document.getElementById('select-main');
+    const selectCompare = document.getElementById('select-compare');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-tab');
+        tabs.forEach(t => t.classList.remove('tab--active'));
+        tab.classList.add('tab--active');
+        contents.forEach(c => {
+          if (c.getAttribute('data-tab-content') === target) {
+            c.classList.add('tab-content--active');
+          } else {
+            c.classList.remove('tab-content--active');
+          }
+        });
+      });
+    });
+
+    function formatPct(value) {
+      const sign = value > 0 ? "+" : "";
+      return sign + value.toFixed(1).replace(".", ",") + "\u00a0%";
+    }
+
+    function updateDashboard() {
+      const keyMain = selectMain.value;
+      const keyCompare = selectCompare.value;
+      const main = kommunen[keyMain];
+      let compare;
+
+      if (keyCompare === "cluster") {
+        compare = clusterDurchschnitt;
+      } else {
+        compare = kommunen[keyCompare];
+      }
+
+      document.getElementById('header-kommunen-name').textContent =
+        "Kommunale Übersicht – " + main.name;
+
+      document.getElementById('cluster-pill').textContent =
+        "Cluster: " + main.cluster;
+
+      // Gesamtüberblick – Demografie
+      document.getElementById('g-einwohner').textContent =
+        main.einwohner.toLocaleString('de-DE');
+      document.getElementById('g-einwohner-change').textContent =
+        formatPct(main.einwohnerChange5);
+      if (main.einwohnerChange5 < 0) {
+        document.getElementById('g-einwohner-change').classList.add('neg');
+      } else {
+        document.getElementById('g-einwohner-change').classList.remove('neg');
+      }
+
+      // simple Indexentwicklung für Balkenhöhen
+      const idx2015 = 100;
+      const idx2025 = 100 + main.einwohnerChange10;
+      const idx2035 = idx2025 + main.einwohnerChange5;
+      document.getElementById('g-einwohner-bar-2015').style.height = (50 + idx2015 / 5) + "%";
+      document.getElementById('g-einwohner-bar-2020').style.height = (50 + idx2025 / 5) + "%";
+      document.getElementById('g-einwohner-bar-2025').style.height = (50 + idx2035 / 5) + "%";
+
+      // Haushalt
+      document.getElementById('g-steuerkraft').textContent =
+        main.steuerkraft + " €";
+      document.getElementById('g-verschuldung').textContent =
+        main.verschuldung + " €";
+      document.getElementById('g-saldo').textContent =
+        (main.saldo >= 0 ? "+" : "") + main.saldo + " T€";
+      document.getElementById('g-invest').innerHTML =
+        main.investquote.toFixed(0) + "&nbsp;%";
+      document.getElementById('g-index-einnahmen').style.width =
+        main.indexEinnahmen + "%";
+      document.getElementById('g-index-ausgaben').style.width =
+        main.indexAusgaben + "%";
+      document.getElementById('g-index-einnahmen-label').textContent =
+        "Index " + main.indexEinnahmen;
+      document.getElementById('g-index-ausgaben-label').textContent =
+        "Index " + main.indexAusgaben;
+
+      const compareName = keyCompare === "cluster" ? "Cluster-Durchschnitt" : compare.name;
+      document.getElementById('g-haushalt-compare-note').textContent =
+        "Vergleich mit: " + compareName + " – reine Illustration, nicht fachlich validiert.";
+
+      // Arbeitsmarkt
+      document.getElementById('g-alo').innerHTML =
+        main.aloQuote.toFixed(1).replace(".", ",") + "&nbsp;%";
+      document.getElementById('g-offene-stellen').textContent =
+        main.offeneStellen;
+      document.getElementById('g-offene-pflege').textContent =
+        main.offeneStellenPflege;
+      document.getElementById('g-beschaeftigung').innerHTML =
+        formatPct(main.beschaeftigungswachstum5);
+      const allgWidth = Math.min(100, 30 + main.offeneStellen / 3);
+      const pflegeWidth = Math.min(100, 30 + main.offeneStellenPflege);
+      document.getElementById('g-stellen-allg').style.width = allgWidth + "%";
+      document.getElementById('g-stellen-pflege').style.width = pflegeWidth + "%";
+      document.getElementById('g-stellen-allg-label').textContent =
+        main.offeneStellen + " Stellen";
+      document.getElementById('g-stellen-pflege-label').textContent =
+        main.offeneStellenPflege + " Stellen";
+
+      // Soziales
+      document.getElementById('g-armut').innerHTML =
+        main.armutQuote.toFixed(1).replace(".", ",") + "&nbsp;%";
+      document.getElementById('g-armut-change').innerHTML =
+        (main.armutChange5 >= 0 ? "+" : "") +
+        main.armutChange5.toFixed(1).replace(".", ",") +
+        "&nbsp;Pp";
+      document.getElementById('g-kinderarmut').innerHTML =
+        main.kinderarmut.toFixed(1).replace(".", ",") + "&nbsp;%";
+      document.getElementById('g-sozialraeume').textContent =
+        main.sozialraeumeBelastet;
+      const belastIndex = Math.min(100, 60 + main.armutQuote);
+      const clusterIndex = Math.min(100, 40 + clusterDurchschnitt.armutQuote);
+      document.getElementById('g-sozialindex-1').style.width = belastIndex + "%";
+      document.getElementById('g-sozialindex-2').style.width = clusterIndex + "%";
+      document.getElementById('g-sozialindex-1-label').textContent =
+        "Index " + Math.round(belastIndex);
+      document.getElementById('g-sozialindex-2-label').textContent =
+        "Index " + Math.round(clusterIndex);
+
+      // Pflege
+      document.getElementById('g-pflege-heute').textContent =
+        main.pflegeHeute;
+      document.getElementById('g-pflege-prognose').innerHTML =
+        formatPct(main.pflegePrognose);
+      document.getElementById('g-pflege-plaetze').style.width =
+        main.pflegePlaetzeIndex + "%";
+      document.getElementById('g-pflege-bedarf').style.width =
+        main.pflegeBedarfIndex + "%";
+      document.getElementById('g-pflege-plaetze-label').textContent =
+        "Index " + main.pflegePlaetzeIndex;
+      document.getElementById('g-pflege-bedarf-label').textContent =
+        "Index " + main.pflegeBedarfIndex;
+
+      // Ampel
+      document.getElementById('g-ampel-demografie').textContent =
+        main.ampel.demografie;
+      document.getElementById('g-ampel-haushalt').textContent =
+        main.ampel.haushalt;
+      document.getElementById('g-ampel-soziales').textContent =
+        main.ampel.soziales;
+      document.getElementById('g-ampel-pflege').textContent =
+        main.ampel.pflege;
+
+      // Demografie-Tab
+      document.getElementById('d-einwohner').textContent =
+        main.einwohner.toLocaleString('de-DE');
+      document.getElementById('d-einwohner-change').innerHTML =
+        formatPct(main.einwohnerChange10);
+
+      const idx2025dem = 100 + main.einwohnerChange10;
+      const idx2035dem = idx2025dem + main.einwohnerChange5;
+      document.getElementById('d-einw-2015').style.height = "60%";
+      document.getElementById('d-einw-2025').style.height = (40 + idx2025dem / 2) + "%";
+      document.getElementById('d-einw-2035').style.height = (40 + idx2035dem / 2) + "%";
+      document.getElementById('d-einw-2025-label').textContent = Math.round(idx2025dem);
+      document.getElementById('d-einw-2035-label').textContent = Math.round(idx2035dem);
+
+      document.getElementById('d-anteil-u18').innerHTML =
+        main.anteilU18.toFixed(0) + "&nbsp;%";
+      document.getElementById('d-anteil-65plus').innerHTML =
+        main.anteil65plus.toFixed(0) + "&nbsp;%";
+      document.getElementById('d-altersquotient').textContent =
+        main.altersquotient.toFixed(1).replace(".", ",");
+      document.getElementById('d-zuwachs-65plus').innerHTML =
+        "+" + main.zuwachs65plus10.toFixed(0) + " Pp";
+      document.getElementById('d-bar-u18').style.width =
+        main.anteilU18 + "%";
+      document.getElementById('d-bar-65plus').style.width =
+        main.anteil65plus + "%";
+      document.getElementById('d-bar-u18-label').innerHTML =
+        main.anteilU18.toFixed(0) + "&nbsp;%";
+      document.getElementById('d-bar-65plus-label').innerHTML =
+        main.anteil65plus.toFixed(0) + "&nbsp;%";
+      document.getElementById('d-haushaltsgroesse').textContent =
+        main.haushaltsgroesse.toFixed(1).replace(".", ",");
+      document.getElementById('d-barrierefrei').textContent =
+        "+" + main.barrierefrei2035;
+      document.getElementById('d-wohn-bestand-label').textContent =
+        "ca. " + Math.round(main.barrierefrei2035 * 0.7);
+      document.getElementById('d-wohn-ziel-label').textContent =
+        "+" + main.barrierefrei2035 + " zusätzlich";
+
+      document.getElementById('d-wanderung').textContent =
+        (main.binnenwanderungSaldo >= 0 ? "+" : "") + main.binnenwanderungSaldo;
+      const zuzug = 200 + main.binnenwanderungSaldo;
+      const wegzug = 200;
+      const zuWidth = Math.min(100, 30 + zuzug / 5);
+      const wegWidth = Math.min(100, 30 + wegzug / 5);
+      document.getElementById('d-wanderung-zu').style.width = zuWidth + "%";
+      document.getElementById('d-wanderung-weg').style.width = wegWidth + "%";
+      document.getElementById('d-wanderung-zu-label').textContent =
+        "z. B. " + zuzug;
+      document.getElementById('d-wanderung-weg-label').textContent =
+        "z. B. " + wegzug;
+
+      const mainTrend = main.einwohnerChange5;
+      let compareTrend = compare.einwohnerChange5;
+      document.getElementById('d-kommunen-trend').innerHTML =
+        formatPct(mainTrend);
+      document.getElementById('d-cluster-trend').innerHTML =
+        formatPct(compareTrend);
+      const trendWidthMain = 50 + Math.abs(mainTrend) * 5;
+      const trendWidthComp = 50 + Math.abs(compareTrend) * 5;
+      document.getElementById('d-bar-kommunen-trend').style.width =
+        trendWidthMain + "%";
+      document.getElementById('d-bar-cluster-trend').style.width =
+        trendWidthComp + "%";
+      document.getElementById('d-bar-kommunen-trend-label').innerHTML =
+        formatPct(mainTrend);
+      document.getElementById('d-bar-cluster-trend-label').innerHTML =
+        formatPct(compareTrend);
+
+      // Soziales-Tab
+      document.getElementById('s-armut').innerHTML =
+        main.armutQuote.toFixed(1).replace(".", ",") + "&nbsp;%";
+      document.getElementById('s-armut-change').innerHTML =
+        (main.armutChange5 >= 0 ? "+" : "") +
+        main.armutChange5.toFixed(1).replace(".", ",") +
+        "&nbsp;Pp";
+      document.getElementById('s-kinderarmut').innerHTML =
+        main.kinderarmut.toFixed(1).replace(".", ",") + "&nbsp;%";
+      const armutIdx2025 = 100 + main.armutChange5 * 3; // stilisiert
+      document.getElementById('s-armut-2015').style.height = "55%";
+      document.getElementById('s-armut-2025').style.height =
+        (50 + armutIdx2025 / 3) + "%";
+      document.getElementById('s-armut-2025-label').textContent =
+        "~" + Math.round(armutIdx2025);
+
+      // Arbeitsmarkt-Tab – vereinfachter Index
+      const arbeitsIdx2025 = 100 + main.beschaeftigungswachstum5;
+      document.getElementById('a-beschaeftigte').textContent =
+        main.offeneStellen + main.offeneStellenPflege;
+      document.getElementById('a-beschaeftigte-2015').style.height = "55%";
+      document.getElementById('a-beschaeftigte-2025').style.height =
+        (50 + arbeitsIdx2025 / 3) + "%";
+      document.getElementById('a-beschaeftigte-2025-label').textContent =
+        "~" + Math.round(arbeitsIdx2025);
+
+      // Pflege-Tab
+      document.getElementById('p-pflege-heute').textContent =
+        main.pflegeHeute;
+      document.getElementById('p-pflege-prognose').innerHTML =
+        formatPct(main.pflegePrognose);
+      document.getElementById('p-plaetze').style.width =
+        main.pflegePlaetzeIndex + "%";
+      document.getElementById('p-bedarf').style.width =
+        main.pflegeBedarfIndex + "%";
+      document.getElementById('p-plaetze-label').textContent =
+        "Index " + main.pflegePlaetzeIndex;
+      document.getElementById('p-bedarf-label').textContent =
+        "Index " + main.pflegeBedarfIndex;
+    }
+
+    selectMain.addEventListener('change', () => {
+      if (selectCompare.value === selectMain.value) {
+        selectCompare.value = "cluster";
+      }
+      updateDashboard();
+    });
+
+    selectCompare.addEventListener('change', () => {
+      if (selectCompare.value === selectMain.value) {
+        selectCompare.value = "cluster";
+      }
+      updateDashboard();
+    });
+
+    updateDashboard();
+  </script>
+</body>
+</html>
